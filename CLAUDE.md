@@ -649,7 +649,31 @@ prefill). Η καταγραφή είναι best-effort — μια αποτυχί
       net 0 — 14→117 χρήσεις, πολύ μεγάλη μετατόπιση συμπεριφοράς σε όλο το dataset) → **ΔΕΝ
       εφαρμόστηκε**, είναι γνήσια αμφίσημη περίπτωση που χρειάζεται νέο διαφοροποιητικό signal, όχι
       reorder. **Αποτέλεσμα: archetype top-1 22/72 → 24/72, macro-F1 αμετάβλητο 0.605.**
-- [ ] Classifier tuning — archetype top-1 accuracy (24/72 @ 0.6). Το triage δείχνει πού να δουλέψει κανείς:
+- [x] **Κατηγορία (α) trait-count dominance — αναλύθηκε περαιτέρω, 2 ακόμα dict-order fixes** — οι 12
+      περιπτώσεις "trait-count dominance" δεν ήταν όλες γνήσια ανισότητα μήκους· ξαναμετρήθηκαν με
+      ακρίβεια: **4/12 ήταν ισοπαλίες ίδιου μήκους** (ίδιο bug pattern με το `Stretch Rim Protector`),
+      **8/12 γνήσια dominance** (μικρότερο preset χάνει από μεγαλύτερο, π.χ. Haliburton/Tatum/Embiid/JJJ —
+      θεμελιώδες, δεν διορθώνεται με reorder).
+      Από τις 4 ισοπαλίες, δοκιμάστηκε reorder ξεχωριστά για κάθε ζευγάρι:
+      **`Wing Scorer` πριν το `Scoring Lead Guard`** (και τα δύο 3 traits, κοινά
+      on_ball_creator+midrange_scorer) → καθαρό κέρδος, διορθώνει DeMar DeRozan, 0 παλινδρομήσεις,
+      **εφαρμόστηκε**.
+      **`Point Forward` πριν το `Two-Way Lead Guard`** (και τα δύο 3 traits, κοινά
+      on_ball_creator+lead_playmaker) → καθαρό κέρδος, διορθώνει Scottie Barnes, 0 παλινδρομήσεις,
+      **εφαρμόστηκε**.
+      **`Instant Offense`/`Floor General`** (και τα δύο 2 traits, κοινό movement_shooter) → **1-προς-1
+      trade** (διορθώνει Tyler Herro + Malik Monk, σπάει Trae Young + Stephen Curry, net 0) → **ΔΕΝ
+      εφαρμόστηκε**, ίδιο pattern με το `Energy Big`/`Rim-Running Anchor` (αμφίσημη περίπτωση, χρειάζεται
+      διαφοροποιητικό signal όχι reorder).
+      **Αποτέλεσμα: archetype top-1 24/72 → 26/72, macro-F1 αμετάβλητο 0.605.**
+      **Παραμένουν ανοιχτά** (γνήσια dominance, όχι tie): Haliburton, Norman Powell, Ja Morant, Derrick
+      White, Jayson Tatum, Paul George, Joel Embiid, Jaren Jackson Jr. — εδώ ένα μικρότερο preset (π.χ.
+      `Floor General`, 2 traits) είναι πάντα υποσύνολο ενός μεγαλύτερου matching preset (π.χ.
+      `Two-Way Lead Guard`, 3 traits) για πολυδιάστατους παίκτες με 5+ active traits. Dict reorder δεν
+      μπορεί να το διορθώσει — χρειάζεται διαφορετικό tie-break κριτήριο από το raw `len(preset)`
+      (π.χ. score-weighted match αντί για μέτρημα traits, ή explicit "primary role" annotation). Bigger
+      architectural αλλαγή, εκτός scope αυτού του pass.
+- [ ] Classifier tuning — archetype top-1 accuracy (26/72 @ 0.6). Το triage δείχνει πού να δουλέψει κανείς:
       **~31 misses = λείπει trait** (τεχνικό), **~16 = άλλος κλάδος** (ανά περίπτωση), **λίγα = ground truth**
       (το `got` είναι εξίσου/πιο σωστό → `accept_also` στο `labels.py`, που χρησιμοποιείται μόλις σε 12/72
       labels ενώ το `ignore` σε 46/72 — ανεκμετάλλευτο, ίδιο pattern με το Phase 7).
@@ -673,9 +697,10 @@ NBA comps → home screen) + Phases 5–8 (UI polish, docs sync, classifier eval
 defensive matching fixes) έχουν ολοκληρωθεί. Παραμένουν από το αρχικό roadmap:
 
 1. **Classifier tuning (archetype top-1)** — η per-trait ακρίβεια βελτιώθηκε σημαντικά (macro-F1 0.601),
-   και ένα dict-order tie-break fix ανέβασε το top-1 σε 24/72 (βλ. `_label_archetype() tie-break` παραπάνω).
-   Παραμένει προσεκτική, ανά-περίπτωση δουλειά — πολλά misses είναι γνήσια αμφίσημα (δύο εξίσου έγκυρα
-   presets) ή εξαρτώνται από trait-count dominance στο ίδιο το tie-break, όχι σαφή bugs.
+   και τρία dict-order tie-break fixes ανέβασαν το top-1 σε 26/72 (βλ. `_label_archetype() tie-break`
+   παραπάνω). Παραμένουν 8 misses γνήσιου trait-count dominance — χρειάζονται διαφορετικό tie-break
+   κριτήριο από το raw `len(preset)` (αρχιτεκτονική αλλαγή, όχι reorder), plus ανά-περίπτωση δουλειά σε
+   misses που είναι γνήσια αμφίσημα (δύο εξίσου έγκυρα presets).
 2. **Self-contained packaging** — PyInstaller exe για τον backend αντί system-Python fallback.
 3. **Multi-league** — NCAA, EuroLeague: νέο pipeline, ίδιο `src/` + ίδιο API.
 

@@ -132,11 +132,14 @@ _wrap-άρει_, δεν τον ξαναγράφει· αλλάζει μόνο μ
       μπήκαν στα `FEATURE_COLS`: ο χρήστης μπορεί πλέον να ζητήσει «καλή περιφερειακή άμυνα» ή
       «rim protection» με βάση το τι σουτάρουν οι αντίπαλοι, όχι το στυλ του αμυντικού.
       Στον classifier: `point_of_attack_defender` F1 0.385 → 0.476, archetype top-1 21/72 → 22/72
-- [x] **`_label_archetype()` tie-break fix** — διάγνωση έδειξε ότι 17/50 misses (34%) οφείλονται στο
-      tie-break rule (preset με τα περισσότερα active traits), όχι σε λείποντα traits. Ένα dict-order
-      fix (`Stretch Rim Protector` πριν το `Stretch Big`) διόρθωσε 2 misses χωρίς καμία παλινδρόμηση —
-      archetype top-1 **22/72 → 24/72**. Λεπτομέρειες & απορριφθέν trade-off (`Energy Big`/
-      `Rim-Running Anchor`) στο `CLAUDE.md`.
+- [x] **`_label_archetype()` tie-break fixes** — διάγνωση έδειξε ότι 17/50 misses (34%) οφείλονται στο
+      tie-break rule (preset με τα περισσότερα active traits), όχι σε λείποντα traits. Τρία dict-order
+      fixes σε ισόμεγέθεις ισοπαλίες (`Stretch Rim Protector` πριν `Stretch Big`· `Wing Scorer` πριν
+      `Scoring Lead Guard`· `Point Forward` πριν `Two-Way Lead Guard`) διόρθωσαν 4 misses χωρίς καμία
+      παλινδρόμηση — archetype top-1 **22/72 → 26/72**. Δύο ακόμα ζευγάρια δοκιμάστηκαν αλλά ήταν
+      1-προς-1 trades (net 0) και **δεν** εφαρμόστηκαν. Τα υπόλοιπα 8 misses είναι γνήσιο trait-count
+      dominance (μικρότερο preset πάντα υποσύνολο μεγαλύτερου) — θεμελιώδες ζήτημα στο tie-break κριτήριο,
+      όχι διορθώσιμο με reorder. Λεπτομέρειες στο `CLAUDE.md`.
 - [ ] Classifier tuning: archetype top-1 accuracy (ξεχωριστό, πιο δύσκολο πρόβλημα — βλ. `CLAUDE.md`).
       Τεκμηριωμένο όριο: η *versatile wing defense* δεν είναι μετρήσιμη από τα διαθέσιμα stats — το
       `deflections` μετράει στυλ (ball-hawking), όχι ποιότητα άμυνας

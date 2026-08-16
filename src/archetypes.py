@@ -344,8 +344,23 @@ COMPOUNDS: dict[str, frozenset[str]] = {
     # Guards ──────────────────────────────────────────────────────────────────
     "Floor General":
         frozenset({"lead_playmaker", "movement_shooter"}),
+    # ΠΡΟΣΟΧΗ στη σειρά: το "Wing Scorer" ΠΡΕΠΕΙ να προηγείται του "Scoring Lead
+    # Guard" — ίδιο μέγεθος (3 traits), κοινά on_ball_creator+midrange_scorer.
+    # Χωρίς αυτό, players σαν τον DeMar DeRozan (movement_shooter + lead_playmaker
+    # + midrange_scorer + on_ball_creator ενεργά) ισοπαλούσαν και έπαιρναν πάντα
+    # "Scoring Lead Guard" (dict order), ενώ το position-eligible label για G-F
+    # wings είναι "Wing Scorer". Μετρημένο: top-1 +1, macro-F1 αμετάβλητο, 0
+    # παλινδρομήσεις (Scoring Lead Guard παραμένει σωστό εκεί που pos_ok διαφέρει).
+    "Wing Scorer":
+        frozenset({"on_ball_creator", "midrange_scorer", "movement_shooter"}),
     "Scoring Lead Guard":
         frozenset({"on_ball_creator", "lead_playmaker", "midrange_scorer"}),
+    # Ίδιο pattern: "Point Forward" πριν το "Two-Way Lead Guard" (3 traits,
+    # κοινά on_ball_creator+lead_playmaker). Ο Scottie Barnes ισοπαλούσε και
+    # έχανε το πιο συγκεκριμένο "Point Forward" (G-F/F/F-C only) υπέρ του
+    # guard-only "Two-Way Lead Guard". top-1 +1, macro-F1 αμετάβλητο, 0 παλινδρομήσεις.
+    "Point Forward":
+        frozenset({"on_ball_creator", "lead_playmaker", "versatile_wing_defender"}),
     "Two-Way Lead Guard":
         frozenset({"on_ball_creator", "lead_playmaker", "point_of_attack_defender"}),
     "Pure Point Guard":
@@ -382,11 +397,9 @@ COMPOUNDS: dict[str, frozenset[str]] = {
         frozenset({"on_ball_creator", "versatile_wing_defender"}),
     "Two-Way Slashing Star":
         frozenset({"on_ball_creator", "slasher", "versatile_wing_defender"}),
-    "Wing Scorer":
-        frozenset({"on_ball_creator", "midrange_scorer", "movement_shooter"}),
+    # "Wing Scorer" και "Point Forward" ορίζονται παραπάνω, πριν τα ισοπαλά
+    # "Scoring Lead Guard"/"Two-Way Lead Guard" — βλ. σχόλια εκεί.
     # "3-and-D Wing": ορίζεται παραπάνω, πριν το "3-and-D Guard" — βλ. σχόλιο εκεί.
-    "Point Forward":
-        frozenset({"on_ball_creator", "lead_playmaker", "versatile_wing_defender"}),
     "Connector / Glue Wing":
         frozenset({"connective_passer", "spot_up_shooter", "versatile_wing_defender"}),
     "Athletic Finisher Wing":
