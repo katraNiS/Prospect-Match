@@ -1,8 +1,8 @@
 # Classifier Validation Report
 
 - Labeled players resolved: **72/72**
-- Current threshold (src): **0.6** — macro-F1 **0.605**, archetype top-1 **22/72 (0.306)**
-- Best global threshold (macro-F1): **0.9** — macro-F1 **0.639**, archetype top-1 **21/72 (0.292)**
+- Current threshold (src): **0.6** — macro-F1 **0.605**, archetype top-1 **24/72 (0.333)**
+- Best global threshold (macro-F1): **0.9** — macro-F1 **0.639**, archetype top-1 **22/72 (0.306)**
 
 ## Per-trait metrics @ threshold 0.6 (worst F1 first)
 
@@ -36,20 +36,20 @@ Unclassified, οπότε το macro-F1 από μόνο του **δεν βλέπ�
 
 | Threshold | Macro-F1 | Archetype top-1 | Traits/row | Unclassified | Fallback | Presets |
 |---|---|---|---|---|---|---|
-| 0.3 | 0.560 | 14/72 (0.194) | 4.07 | 4.4% | 18.5% | 36 |
-| 0.35 | 0.563 | 14/72 (0.194) | 3.80 | 5.7% | 20.8% | 36 |
-| 0.4 | 0.571 | 15/72 (0.208) | 3.54 | 7.0% | 23.0% | 36 |
-| 0.45 | 0.576 | 16/72 (0.222) | 3.29 | 8.6% | 24.7% | 36 |
-| 0.5 | 0.585 | 19/72 (0.264) | 3.05 | 10.5% | 26.7% | 36 |
-| 0.55 | 0.597 | 19/72 (0.264) | 2.84 | 12.6% | 28.5% | 36 |
-| 0.6 ⬅ current | 0.605 | 22/72 (0.306) | 2.62 | 15.0% | 29.3% | 36 |
-| 0.65 | 0.609 | 20/72 (0.278) | 2.43 | 17.7% | 30.3% | 35 |
-| 0.7 | 0.616 | 20/72 (0.278) | 2.24 | 20.6% | 30.9% | 36 |
-| 0.75 | 0.627 | 20/72 (0.278) | 2.07 | 23.5% | 31.5% | 34 |
-| 0.8 | 0.631 | 21/72 (0.292) | 1.91 | 26.4% | 31.8% | 33 |
-| 0.85 | 0.632 | 21/72 (0.292) | 1.76 | 29.4% | 31.6% | 32 |
-| 0.9 ⬅ best F1 | 0.639 | 21/72 (0.292) | 1.62 | 32.3% | 31.7% | 31 |
-| 0.95 | 0.635 | 19/72 (0.264) | 1.50 | 35.6% | 31.3% | 31 |
+| 0.3 | 0.560 | 16/72 (0.222) | 4.07 | 4.4% | 18.5% | 36 |
+| 0.35 | 0.563 | 16/72 (0.222) | 3.80 | 5.7% | 20.8% | 36 |
+| 0.4 | 0.571 | 17/72 (0.236) | 3.54 | 7.0% | 23.0% | 36 |
+| 0.45 | 0.576 | 18/72 (0.250) | 3.29 | 8.6% | 24.7% | 36 |
+| 0.5 | 0.585 | 21/72 (0.292) | 3.05 | 10.5% | 26.7% | 36 |
+| 0.55 | 0.597 | 21/72 (0.292) | 2.84 | 12.6% | 28.5% | 36 |
+| 0.6 ⬅ current | 0.605 | 24/72 (0.333) | 2.62 | 15.0% | 29.3% | 36 |
+| 0.65 | 0.609 | 22/72 (0.306) | 2.43 | 17.7% | 30.3% | 35 |
+| 0.7 | 0.616 | 22/72 (0.306) | 2.24 | 20.6% | 30.9% | 36 |
+| 0.75 | 0.627 | 22/72 (0.306) | 2.07 | 23.5% | 31.5% | 34 |
+| 0.8 | 0.631 | 23/72 (0.319) | 1.91 | 26.4% | 31.8% | 33 |
+| 0.85 | 0.632 | 22/72 (0.306) | 1.76 | 29.4% | 31.6% | 32 |
+| 0.9 ⬅ best F1 | 0.639 | 22/72 (0.306) | 1.62 | 32.3% | 31.7% | 31 |
+| 0.95 | 0.635 | 20/72 (0.278) | 1.50 | 35.6% | 31.3% | 31 |
 
 ## Structural misses @ 0.6 — expected trait είναι position-ineligible (5)
 
@@ -61,7 +61,7 @@ _Δεν διορθώνονται με threshold tuning — είναι θέμα t
 - **LeBron James** — expected `lead_playmaker` (μη eligible για τη θέση του)
 - **Josh Hart** — expected `versatile_wing_defender` (μη eligible για τη θέση του)
 
-## Archetype misclassifications @ 0.6 (50/72)
+## Archetype misclassifications @ 0.6 (48/72)
 
 - **Tyrese Haliburton**: expected `Floor General` → got `Two-Way Lead Guard`
 - **Luka Doncic**: expected `Scoring Lead Guard` → got `Two-Way Lead Guard`
@@ -97,9 +97,7 @@ _Δεν διορθώνονται με threshold tuning — είναι θέμα t
 - **Alperen Sengun**: expected `Point Center` → got `Playmaking Rim Protector`
 - **Joel Embiid**: expected `Two-Way Scoring Big` → got `Point Center`
 - **Lauri Markkanen**: expected `Stretch Big` → got `Shooting Stretch Big`
-- **Brook Lopez**: expected `Stretch Rim Protector` → got `Stretch Big`
 - **Jaren Jackson Jr.**: expected `Stretch Rim Protector` → got `Modern Two-Way Forward`
-- **Myles Turner**: expected `Stretch Rim Protector` → got `Stretch Big`
 - **Jakob Poeltl**: expected `Pure Defensive Center` → got `Rim-Running Anchor`
 - **Mitchell Robinson**: expected `Pure Defensive Center` → got `Rim-Running Anchor`
 - **Al Horford**: expected `Versatile Swiss-Army Big` → got `Shooting Stretch Big`

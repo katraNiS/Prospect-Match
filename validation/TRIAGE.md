@@ -17,14 +17,14 @@ Threshold: **0.6** · dataset rows: **8382** · labels: **72**
 | `Pure Shooter` | 123 | `Sharpshooter`, `Two-Way Sharpshooter` |
 | `Putback Finisher` | 130 | `Energy Big` |
 | `Slashing Guard` | 142 | `Bucket-Getter`, `Two-Way Slashing Star`, `All-Around Forward` |
-| `Shooting Stretch Big` | 159 | `Stretch Four / Combo Forward` |
+| `Shooting Stretch Big` | 156 | `Stretch Four / Combo Forward` |
 | `Pure Defensive Center` | 171 | `Rim-Running Anchor` |
 | `Instant Offense` | 189 | `Bucket-Getter`, `Wing Scorer` |
-| `Stretch Big` | 437 | `Versatile Swiss-Army Big` |
+| `Stretch Big` | 417 | `Versatile Swiss-Army Big` |
 
 > Κανένα preset δεν είναι εντελώς απρόσιτο.
 
-## 2. Triage των 50 misses
+## 2. Triage των 48 misses
 
 | Κατηγορία | Πλήθος | Είδος δουλειάς |
 |---|---|---|
@@ -32,7 +32,7 @@ Threshold: **0.6** · dataset rows: **8382** · labels: **72**
 | B. ΠΙΟ ΣΥΓΚΕΚΡΙΜΕΝΟ LABEL | 2 | **ground truth** |
 | C. ΛΙΓΟΤΕΡΟ ΣΥΓΚΕΚΡΙΜΕΝΟ | 3 | τεχνικό |
 | D. POSITION MISMATCH | 0 | design |
-| E. ΑΛΛΟΣ ΚΛΑΔΟΣ | 15 | ανά περίπτωση |
+| E. ΑΛΛΟΣ ΚΛΑΔΟΣ | 13 | ανά περίπτωση |
 
 ### A. ΛΕΙΠΕΙ TRAIT — τεχνικό, ΔΙΟΡΘΩΣΙΜΟ  (30)
 
@@ -96,7 +96,7 @@ _Κανένα position-valid preset δεν ταίριαξε, οπότε κέρδ
 
 _(καμία)_
 
-### E. ΑΛΛΟΣ ΚΛΑΔΟΣ — ανά περίπτωση  (15)
+### E. ΑΛΛΟΣ ΚΛΑΔΟΣ — ανά περίπτωση  (13)
 
 _Καμία subset σχέση· ο classifier πήγε σε τελείως άλλη οικογένεια._
 
@@ -113,9 +113,7 @@ _Καμία subset σχέση· ο classifier πήγε σε τελείως άλ�
 | DeMar DeRozan | G-F | `Wing Scorer` | `Scoring Lead Guard` | — |
 | Scottie Barnes | G-F | `Point Forward` | `Two-Way Lead Guard` | — |
 | Joel Embiid | F-C | `Two-Way Scoring Big` | `Point Center` | — |
-| Brook Lopez | C | `Stretch Rim Protector` | `Stretch Big` | — |
 | Jaren Jackson Jr. | F-C | `Stretch Rim Protector` | `Modern Two-Way Forward` | — |
-| Myles Turner | F-C | `Stretch Rim Protector` | `Stretch Big` | — |
 | Isaiah Hartenstein | F-C | `Energy Big` | `Rim-Running Anchor` | — |
 
 ## 3. Ποιο trait ξεκλειδώνει τα περισσότερα misses

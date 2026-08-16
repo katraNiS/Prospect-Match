@@ -401,12 +401,19 @@ COMPOUNDS: dict[str, frozenset[str]] = {
         frozenset({"on_ball_creator", "slasher", "playmaking_big"}),
     "Two-Way Scoring Big":
         frozenset({"post_scorer", "rim_protector"}),
+    # ΠΡΟΣΟΧΗ στη σειρά: το "Stretch Rim Protector" ΠΡΕΠΕΙ να προηγείται του
+    # "Stretch Big". Ίδιο μέγεθος (2 traits), ίδιο eligible pool· χωρίς αυτή τη
+    # σειρά ισοπαλούσαν στο (pos_ok, trait_count) και το dict ordering έδινε
+    # πάντα "Stretch Big" — 34 χρήσεις έναντι σχεδόν διπλάσιων δυνατών (57),
+    # με Brook Lopez / Myles Turner να παίρνουν λάθος label παρόλο που το
+    # rim_protector τους ήταν ενεργό. Μετρημένο: top-1 22/72 → 24/72, macro-F1
+    # αμετάβλητο, καμία νέα παλινδρόμηση.
+    "Stretch Rim Protector":
+        frozenset({"stretch_big", "rim_protector"}),
     "Stretch Big":
         frozenset({"stretch_big", "efficient_finisher"}),
     "Shooting Stretch Big":
         frozenset({"stretch_big", "spot_up_shooter"}),
-    "Stretch Rim Protector":
-        frozenset({"stretch_big", "rim_protector"}),
     "Rim-Running Anchor":
         frozenset({"rim_protector", "roll_finisher", "defensive_rebounder"}),
     "Pure Defensive Center":
