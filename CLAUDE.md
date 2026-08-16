@@ -673,6 +673,29 @@ prefill). Η καταγραφή είναι best-effort — μια αποτυχί
       μπορεί να το διορθώσει — χρειάζεται διαφορετικό tie-break κριτήριο από το raw `len(preset)`
       (π.χ. score-weighted match αντί για μέτρημα traits, ή explicit "primary role" annotation). Bigger
       architectural αλλαγή, εκτός scope αυτού του pass.
+- [x] **Score-weighted tie-break — ΑΡΝΗΤΙΚΟ ΑΠΟΤΕΛΕΣΜΑ (δοκιμάστηκε, ΔΕΝ κρατήθηκε)** — δοκιμάστηκε αν
+      το mean trait-score (πόσο έντονα εκφράζονται τα traits ενός preset) μπορεί να αντικαταστήσει το
+      raw trait-count ως tie-break criterion, στοχεύοντας ακριβώς τα 8 misses του trait-count dominance.
+      **(α) Mean-score ως πρωτεύον κριτήριο** (πλήρης αντικατάσταση του `len(preset)`): καταστροφικό.
+      top-1 22/72 → 18/72 στα labeled· dataset-wide 13.4% των rows (1122/8382) άλλαξαν label,
+      `Rim-Running Anchor` 554 → 24 χρήσεις, `Bucket-Getter` έγινε 100% δομικά απρόσιτο (123 → 0). Ο
+      μέσος όρος ευνοεί συστηματικά μικρότερα presets — λιγότεροι όροι στο mean = πιο εύκολο υψηλό score,
+      ανεξάρτητα από correctness.
+      **(β) Mean-score ΜΟΝΟ ως tertiary tie-break σε ισοπαλίες ίδιου μήκους** (γενίκευση του χειροκίνητου
+      `Stretch Rim Protector`/`Wing Scorer`/`Point Forward` fix σε αυτόματο κανόνα): επίσης αρνητικό.
+      top-1 26/72 → 22/72 — ΑΝΑΤΡΕΠΕΙ τα ήδη διορθωμένα (DeRozan) και σπάει άλλα ήδη-σωστά labeled
+      players (SGA, Curry, Jimmy Butler, KAT) που εξαρτώνταν από το τρέχον dict order σε άλλα ζεύγη·
+      dataset-wide 9.4% (788/8382) rows άλλαξαν label.
+      **Γιατί αποτυγχάνει η γενίκευση:** το mean-score δεν είναι σταθερός discriminator ανά ζευγάρι
+      presets — για κάποια ζεύγη προτιμά το σωστό preset, για άλλα όχι, οπότε ένας ενιαίος αυτόματος
+      κανόνας διορθώνει λίγα αλλά σπάει περισσότερα. Η χειροκίνητη, per-pair, μετρημένη διόρθωση
+      (dict reorder με explicit before/after ανά ζευγάρι) είναι **ουσιαστικά καλύτερη** από κάθε
+      "principled" formula που δοκιμάστηκε, ακριβώς επειδή επεμβαίνει χειρουργικά μόνο εκεί που έχει
+      επαληθευτεί μηδενικό trade-off, ενώ μια γενική φόρμουλα επεμβαίνει παντού αδιακρίτως.
+      **Τα 8 misses γνήσιου trait-count dominance θεωρούνται μη διορθώσιμα** μέσα στην τρέχουσα
+      compositional αρχιτεκτονική χωρίς σοβαρό collateral damage — θα χρειαζόταν πλήρης επανασχεδιασμός
+      του `_label_archetype()` (π.χ. trained classifier ή explicit "primary role" annotation ανά preset),
+      όχι tie-break tuning.
 - [ ] Classifier tuning — archetype top-1 accuracy (26/72 @ 0.6). Το triage δείχνει πού να δουλέψει κανείς:
       **~31 misses = λείπει trait** (τεχνικό), **~16 = άλλος κλάδος** (ανά περίπτωση), **λίγα = ground truth**
       (το `got` είναι εξίσου/πιο σωστό → `accept_also` στο `labels.py`, που χρησιμοποιείται μόλις σε 12/72
@@ -698,9 +721,11 @@ defensive matching fixes) έχουν ολοκληρωθεί. Παραμένου�
 
 1. **Classifier tuning (archetype top-1)** — η per-trait ακρίβεια βελτιώθηκε σημαντικά (macro-F1 0.601),
    και τρία dict-order tie-break fixes ανέβασαν το top-1 σε 26/72 (βλ. `_label_archetype() tie-break`
-   παραπάνω). Παραμένουν 8 misses γνήσιου trait-count dominance — χρειάζονται διαφορετικό tie-break
-   κριτήριο από το raw `len(preset)` (αρχιτεκτονική αλλαγή, όχι reorder), plus ανά-περίπτωση δουλειά σε
-   misses που είναι γνήσια αμφίσημα (δύο εξίσου έγκυρα presets).
+   παραπάνω). Δοκιμάστηκε score-weighted tie-break (mean trait-score) ως γενική αντικατάσταση του
+   `len(preset)` — **αρνητικό αποτέλεσμα και στις δύο εκδοχές** (βλ. `Score-weighted tie-break` παραπάνω),
+   οπότε τα 8 misses γνήσιου trait-count dominance θεωρούνται μη διορθώσιμα χωρίς πλήρη επανασχεδιασμό
+   του `_label_archetype()`. Παραμένει ανά-περίπτωση δουλειά σε misses που είναι γνήσια αμφίσημα (δύο
+   εξίσου έγκυρα presets, `accept_also` candidates).
 2. **Self-contained packaging** — PyInstaller exe για τον backend αντί system-Python fallback.
 3. **Multi-league** — NCAA, EuroLeague: νέο pipeline, ίδιο `src/` + ίδιο API.
 
