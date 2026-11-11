@@ -1,27 +1,38 @@
 # ProspectMatch
 
-Ένα **scouting εργαλείο** που βρίσκει πραγματικούς παίκτες με βάση ένα custom στατιστικό/χαρακτηριστικό προφίλ — όχι quiz τύπου "ποιος παίκτης είμαι", αλλά πραγματικό εργαλείο ανάλυσης για scouting και roster building.
+A desktop scouting tool that finds real NBA players matching a custom statistical profile, and explains why each one matches.
 
-> Project στο πλαίσιο πτυχιακής. Προτεραιότητα στην **ακρίβεια** και στην **τεκμηρίωση** κάθε σχεδιαστικής απόφασης.
+> 🇬🇷 Ελληνική έκδοση: [README.el.md](./README.el.md)
 
----
+## Screenshots
 
-## Τι κάνει
+| Home | Search | Prospects |
+|---|---|---|
+| ![Home screen](docs/screenshots/home.png) | ![Search screen](docs/screenshots/search.png) | ![Prospects screen](docs/screenshots/prospects.png) |
 
-Ο χρήστης (scout) ορίζει ένα **player profile**: στατιστικά + βάρη ανά stat. Το σύστημα επιστρέφει τους **πιο όμοιους πραγματικούς παίκτες** από τη βάση, με **explainability** — δηλαδή _γιατί_ ταιριάζει ο καθένας (ποια stats συμπίπτουν, ποια αποκλίνουν, και κατά πόσο).
+_Screenshots are not added yet; see [`docs/screenshots/`](./docs/screenshots/README.md)._
 
-Ο χρήστης μπορεί επίσης να επιλέξει **traits** (π.χ. `lead_playmaker`, `spot_up_shooter`) για να δώσει μικρό boost σε παίκτες με αυτό το profile, χωρίς να αποκλείει κανέναν.
+## Key results
 
-Πέρα από το similarity search, ο χρήστης μπορεί να κρατά τους δικούς του
-**prospects** — παίκτες που παρακολουθεί χειροκίνητα (physicals, ομάδα, σημειώσεις) —
-και να τους συνδέει απευθείας με NBA comps: prefill του search από τα physicals ενός
-prospect, και αποθήκευση των αποτελεσμάτων πάνω στην εγγραφή του. Ένα home screen
-συγκεντρώνει την κατάσταση του dataset, τους πρόσφατους prospects και το ιστορικό
-αναζητήσεων.
+All numbers below were taken from the repository or from running the code on 2026-11-11.
 
----
+- **Data:** 8,382 player-season rows from 1,589 players (1996-97 to 2024-25), after the minutes filter. 23 features are used for matching.
+- **Archetypes:** 18 primitive traits that combine into 36 compound presets (spec in [`ARCHETYPES.md`](./ARCHETYPES.md)).
+- **Validation:** 72 hand-labeled players. Trait classifier macro-F1 is **0.605**; the full archetype label matches the expected one for **26 of 72** players (36%). See [Known limitations](#known-limitations) for what this does and does not show.
+- **Defensive matching:** before availability-aware matching, defensive queries on tracking-era stats (deflections) returned 0% pre-2016 players. After it, they return 54.7%, against 57.7% pre-2016 share in the dataset ([`validation/DEFENSE_IMPACT.md`](./validation/DEFENSE_IMPACT.md)).
+- **Tests:** 73 pytest tests pass (`python -m pytest tests/ -q`).
 
-## Πώς δουλεύει (high-level)
+## What it does
+
+- **Custom profile with weights.** The user picks stats (e.g. TS%, assist %, deflections, height), sets a target value for each, and a priority weight (×1 / ×2 / ×3).
+- **Similarity search.** Returns the most similar real player-seasons, one best season per player.
+- **Trait boost.** The user can select traits (e.g. `lead_playmaker`, `spot_up_shooter`). Players with those active traits get a small score boost; nobody is excluded.
+- **Explainability.** Each match shows which requested stats agree, which diverge and by how much, a radar chart (percentile 0–100, player vs target), and a coverage badge when a match was judged on fewer stats because some data does not exist for that season.
+- **Prospect tracking.** Hand-entered prospects (physicals, team, notes) can be linked to NBA comps: the search is prefilled from the prospect's physicals, and result sets can be saved on the prospect.
+- **Home screen.** Dataset status, recent prospects, and search history (re-run a past search in one click).
+- Position filter and CSV export on the search results.
+
+## How it works
 
 ```
 nba_api  →  pipeline/fetch_nba_data.py  →  data/nba_stats_full.csv
@@ -38,211 +49,110 @@ nba_api  →  pipeline/fetch_nba_data.py  →  data/nba_stats_full.csv
                          ┌──────────────────────────┴──────────────────────────┐
                          ↓                                                       ↓
             backend/ (FastAPI API)                              app/streamlit_app.py
-            /similar /classify /stats ...                       (legacy UI, λειτουργικό)
+            /similar /classify /stats ...                       (legacy UI, still works)
                          ↓
-            frontend/ (React + TS, SVG radar)  ←  wrapped σε  →  electron/ (desktop app)
+            frontend/ (React + TS, SVG radar)  ←  wrapped in  →  electron/ (desktop app)
 ```
 
-Το **desktop app** (Electron + FastAPI + React) είναι η κύρια κατεύθυνση· το Streamlit
-UI παραμένει λειτουργικό και καταναλώνει το `src/` απευθείας. Ο πυρήνας `src/`
-(preprocessing/archetypes/similarity) είναι **κοινός** — ο FastAPI backend τον
-_wrap-άρει_, δεν τον ξαναγράφει· αλλάζει μόνο με μετρημένη αιτιολόγηση και test.
+The desktop app (Electron + FastAPI + React) is the main interface. The legacy Streamlit UI still works and uses `src/` directly. `src/` is the single shared core: the FastAPI backend wraps it and does not reimplement it, so every interface uses the same matching logic. It changes only with measured justification and a test.
 
-**Compositional archetypes:** αντί για ~10 fixed κουτιά, ορίζουμε **18 primitive traits** (π.χ. `slasher`, `rim_protector`, `lead_playmaker`) που συνδυάζονται αυτόματα σε **36 σύνθετα archetypes** (π.χ. `playmaking_big` + `rim_protector` + `help_defender` = "Playmaking Rim Protector"). Ο ίδιος feature space χρησιμοποιείται και για το matching.
+**Compositional archetypes.** Instead of about 10 fixed boxes, there are 18 primitive traits (e.g. `slasher`, `rim_protector`, `lead_playmaker`) that combine into 36 compound archetypes (e.g. `playmaking_big` + `rim_protector` + `help_defender` = "Playmaking Rim Protector"). The same feature space is used for matching.
 
-**Similarity metric:** weighted L2 distance στο z-score space, masked μόνο στα stats που ο χρήστης όρισε. `1/(1+distance)` → score (0, 1].
+**Similarity metric.**
+- Weighted L2 distance in z-score space, computed only over the stats the user defined. Unspecified stats do not affect the score. The distance is normalized by the sum of weights (weighted RMS), so adding more stats does not by itself lower the similarity.
+- `similarity = 1 / (1 + distance)`, in (0, 1].
+- L2 rather than cosine, because the question is "find players *close to these values*"; cosine would penalize extreme players on unspecified dimensions.
+- **Availability-aware matching.** Hustle stats exist only from 2016-17 and matchup defense (`d_fg3_diff`, `d_rim_diff`) from 2013-14. For each row, the distance uses only the dimensions that have real data, and the score is shrunk toward the population-average similarity in proportion to the share of requested weight that was available (`CONFIDENCE_ALPHA = 1.0`). With full coverage the result is exactly the plain masked score. The share is returned by the API and shown as an "N% data" badge.
+- **Trait boost:** +0.004 per shared active trait (a tiebreaker only).
 
-Πλήρεις ορισμοί traits/compounds στο [`ARCHETYPES.md`](./ARCHETYPES.md).
-
----
+Full trait and preset definitions: [`ARCHETYPES.md`](./ARCHETYPES.md).
 
 ## Tech stack
 
-| Layer | Επιλογή |
+| Layer | Choice |
 |---|---|
-| Core / Language | Python (`src/` — preprocessing, archetypes, similarity) |
+| Core | Python (`src/`: preprocessing, archetypes, similarity) |
+| ML / math | scikit-learn, pandas, numpy |
 | Backend API | FastAPI + uvicorn |
-| Frontend | React 18 + TypeScript + Vite (raw-SVG radar, χωρίς charting lib) |
+| Frontend | React 18 + TypeScript + Vite (raw-SVG radar, no charting library) |
 | Desktop shell | Electron + electron-builder |
 | Legacy UI | Streamlit (`app/streamlit_app.py`) |
-| Data storage | CSV flat file (`data/nba_stats_full.csv`) |
-| Data sources | nba_api (box + advanced + scoring + hustle + matchup defense) |
-| ML / Math | scikit-learn, pandas, numpy |
+| Data storage | CSV flat file (`data/nba_stats_full.csv`); prospects and search history as JSON files |
+| Data source | `nba_api` (box, advanced, scoring, hustle, matchup defense) |
 
-> Δεν χρησιμοποιούμε βάση δεδομένων στο παρόν στάδιο — το CSV είναι αρκετό.
-> PostgreSQL/SQLAlchemy παραμένει επιλογή για αργότερα.
->
-> Πλήρες setup/run/build του desktop stack: **[`DEVELOPMENT.md`](./DEVELOPMENT.md)**.
+There is no database. Details of the desktop stack: [`DEVELOPMENT.md`](./DEVELOPMENT.md).
 
----
+## Quick start
 
-## Κατάσταση project
+**Requirements.** Developed on Python 3.12.1 and Node.js 24.17.0 (the test suite was run on this Python version). No minimum Python version is declared in the repo. The installed Electron 43 requires Node.js ≥ 22.12 and Vite 5 requires Node.js ≥ 18, so use Node.js 22.12 or newer. Python dependencies are listed in `requirements.txt` (legacy UI and data pipeline) and `backend/requirements.txt` (API).
 
-- [x] Ορισμός ιδέας & scope (NBA-only πρώτα)
-- [x] API exploration — ξέρουμε ακριβώς τι fields δίνει το `nba_api`
-- [x] Archetype design: 18 primitives + 36 compound presets (`src/archetypes.py`· spec `ARCHETYPES.md`)
-- [x] Data pipeline — box/advanced + scoring (PCT_PTS_2PT_MR κ.α.) + hustle (deflections κ.α.)
-      + **defensive impact** (DFG% ανά zone: overall / 3PT / rim, από `LeagueDashPtDefend`, 2013-14+)
-- [x] `src/preprocessing.py` — normalization, tiered MPG filter, z-scores
-- [x] `src/archetypes.py` — trait signals + compound presets + classifier
-- [x] `src/similarity.py` — weighted L2 matching, trait boost, explanations
-- [x] `app/streamlit_app.py` — working Streamlit UI
-- [x] Validation: 20 γνωστοί παίκτες (stars + role players) — archetypes & similarity
-- [x] Position-aware preset matching (`PRESET_POSITIONS`) — διορθώνει misclassification (π.χ. Porzingis → "Slashing Guard")
-- [x] Scale-invariant similarity — weighted RMS αντί raw sum, αποφεύγει compression με πολλά stats
-- [x] Radar chart (percentile 0–100) — StatsBomb-style, player vs user target, `plotly`
-- [x] Validation harness (`validation/`) — 72 labeled παίκτες, per-trait precision/recall/F1, threshold sweep → `REPORT.md`
-- [x] **FastAPI backend** (`backend/`) — 6 endpoints (`/similar`, `/classify`, `/stats`, `/archetypes`, …), wrap-άρει το `src/` αμετάβλητο
-- [x] **React frontend** (`frontend/`) — stat builder + result cards + radar (TypeScript)
-- [x] **Electron desktop app** (`electron/`) — `npm run dev` (backend+frontend+electron μαζί), `npm run dist`
-- [x] **Routing + πολλαπλά screens** — `react-router-dom` (`HashRouter`), Home / Search / Prospects screens
-- [x] **Prospect tracking** — CRUD για χειρόγραφους prospects (JSON store, `PROSPECTMATCH_DATA_DIR`)
-- [x] **Prospect ↔ NBA comps** — prefill search από prospect physicals, αποθήκευση/διαγραφή αποτελεσμάτων
-- [x] **Home screen + search history** — dataset status, πρόσφατοι prospects, τελευταίες αναζητήσεις (re-run με ένα click)
-- [x] **UI polish** — φίλτρο ανά position + export αποτελεσμάτων σε CSV (client-side, στο search screen)
-- [x] **UI rebuild — "Industry dark"** — dark-mode-first, data-dense επανασχεδίαση και των 4 οθονών:
-      stat builder με **πραγματικό histogram** του league ανά stat, πίνακας matches με coverage cells
-      και expandable breakdown, raw-SVG radar overlay (αφαιρέθηκε το Recharts, bundle ~600 KB → 219 KB).
-      Η υλοποίηση αποκάλυψε τρία σφάλματα παρουσίασης που το προηγούμενο UI έκρυβε — breakdown με
-      features που δεν ζητήθηκαν, imputed τιμές που εμφανίζονταν ως μετρημένες, και συντομεύσεις labels
-      που έβγαζαν "cm" αντί για "Height". Όλα διορθωμένα και κλειδωμένα με tests.
-- [x] **`ARCHETYPES.md` sync** — 29 → 36 presets, real players επιβεβαιωμένα πάνω στο dataset
-- [x] **Classifier eval hardening** — validation ground truth (`validation/labels.py`) διορθώθηκε ώστε να μην
-      τιμωρεί legit δευτερεύοντα traits πολυδιάστατων players· macro-F1 0.494 → 0.601 (+22%), χωρίς αλλαγές
-      στο `src/`
-- [x] **Defensive matching fixes** — τρία δομικά προβλήματα που έκαναν τα defensive queries αναξιόπιστα:
-      (α) η σεζόν 2015-16 είχε corrupt hustle data (partial-season sample σε λάθος κλίμακα) και κυριαρχούσε
-      σε κάθε query — 5/10 → 0/10 αποτελέσματα από corrupt rows·
-      (β) το `def_rating` έλειπε από τα `FEATURE_COLS` παρόλο που ο classifier το χρησιμοποιούσε ήδη —
-      προστέθηκε με season-relative centering, γιατί είναι era-dependent (corr 0.62 με τη σεζόν)·
-      (γ) τα hustle stats λείπουν πριν το 2016-17, οπότε το imputation απέκλειε de facto το 56% της βάσης
-      από κάθε defensive query (**0%** pre-2016 αποτελέσματα)
-- [x] **Availability-aware matching** — το distance υπολογίζεται μόνο στις διαστάσεις με πραγματικά δεδομένα
-      ανά παίκτη, με confidence discount ώστε τα ελλιπή rows να μην εκτοπίζουν όσα έχουν πλήρη δεδομένα.
-      Defensive queries: **0% → 54.7%** pre-2016 representation (baseline 57.7%), με μηδενικό regression
-      στα offensive. Το UI δείχνει badge «N% data» όπου το match κρίθηκε σε λιγότερα stats.
-- [x] **Test suite** (`tests/`) — 64 pytest tests: data integrity, era balance, discriminative power,
-      threshold usability, preset reachability, metadata συνέπεια
-- [x] **Archetype triage** (`validation/triage_archetypes.py`) — κατηγοριοποιεί τα misclassifications ώστε
-      να ξεχωρίζει τι είναι τεχνικό bug και τι απόφαση ground truth. Οδήγησε σε δύο διορθώσεις: το
-      `versatile_wing_defender` ανταμείβε το *μέγεθος* (6/8 false positives ήταν centers) → precision
-      0.529 → 0.692· και το preset "3-and-D Wing" ήταν δομικά απρόσιτο (0 χρήσεις σε 8382 rows) επειδή
-      έχανε σε ισοπαλία από το "3-and-D Guard" → 21 G-F wings έπαιρναν λάθος "Guard" label
-- [x] **Matchup-based defensive impact στο engine** — τα `d_fg3_diff` (perimeter) και `d_rim_diff` (rim)
-      μπήκαν στα `FEATURE_COLS`: ο χρήστης μπορεί πλέον να ζητήσει «καλή περιφερειακή άμυνα» ή
-      «rim protection» με βάση το τι σουτάρουν οι αντίπαλοι, όχι το στυλ του αμυντικού.
-      Στον classifier: `point_of_attack_defender` F1 0.385 → 0.476, archetype top-1 21/72 → 22/72
-- [x] **`_label_archetype()` tie-break fixes** — διάγνωση έδειξε ότι 17/50 misses (34%) οφείλονται στο
-      tie-break rule (preset με τα περισσότερα active traits), όχι σε λείποντα traits. Τρία dict-order
-      fixes σε ισόμεγέθεις ισοπαλίες (`Stretch Rim Protector` πριν `Stretch Big`· `Wing Scorer` πριν
-      `Scoring Lead Guard`· `Point Forward` πριν `Two-Way Lead Guard`) διόρθωσαν 4 misses χωρίς καμία
-      παλινδρόμηση — archetype top-1 **22/72 → 26/72**. Δύο ακόμα ζευγάρια δοκιμάστηκαν αλλά ήταν
-      1-προς-1 trades (net 0) και **δεν** εφαρμόστηκαν. Τα υπόλοιπα 8 misses είναι γνήσιο trait-count
-      dominance (μικρότερο preset πάντα υποσύνολο μεγαλύτερου) — θεμελιώδες ζήτημα στο tie-break κριτήριο,
-      όχι διορθώσιμο με reorder. Λεπτομέρειες στο `CLAUDE.md`.
-- [ ] Classifier tuning: archetype top-1 accuracy (ξεχωριστό, πιο δύσκολο πρόβλημα — βλ. `CLAUDE.md`).
-      Τεκμηριωμένο όριο: η *versatile wing defense* δεν είναι μετρήσιμη από τα διαθέσιμα stats — το
-      `deflections` μετράει στυλ (ball-hawking), όχι ποιότητα άμυνας
-- [ ] Per-36 normalization των `stl`/`blk` (τώρα counting stats ενώ το rebounding είναι rate-adjusted)
-- [ ] Self-contained bundle (PyInstaller backend exe)
-- [ ] Multi-league support (NCAA, EuroLeague κ.α.)
-
----
-
-## Δομή αρχείων
-
-```
-ProspectMatch/
-├── README.md                  ← αυτό το αρχείο
-├── CLAUDE.md                  ← context/οδηγίες για το Claude Code
-├── ARCHETYPES.md              ← πλήρες spec των archetypes (traits + compounds)
-├── DEVELOPMENT.md             ← setup/run/build του desktop stack
-├── package.json               ← root: npm run dev / npm run dist
-├── data/
-│   └── nba_stats_full.csv     ← merged dataset (δεν είναι στο git)
-├── pipeline/
-│   └── fetch_nba_data.py      ← fetch nba_api → CSV  [DONE]
-├── src/                       ← κοινός πυρήνας (ο backend τον wrap-άρει, δεν τον μεταλλάσσει)
-│   ├── preprocessing.py       ← load, clean, normalize  [DONE]
-│   ├── archetypes.py          ← trait signals + presets + classifier  [DONE]
-│   └── similarity.py          ← matching engine  [DONE]
-├── backend/                   ← FastAPI API (wrap-άρει το src/)  [DONE]
-│   └── store.py               ← JSON repo: prospects.json + searches.json (atomic write)  [DONE]
-├── frontend/                  ← React + TS + Vite (Industry dark design system)  [DONE]
-│   └── src/screens/           ← Home, Search, Prospects, ProspectForm (react-router HashRouter)  [DONE]
-├── electron/                  ← desktop shell (spawn backend + load UI)  [DONE]
-├── validation/                ← measurement harnesses (δεν αλλάζουν το src/)
-│   ├── tune_threshold.py      ← per-trait P/R/F1 + threshold sweep → REPORT.md  [DONE]
-│   ├── defense_impact.py      ← era balance / corrupt rows / def_rating → DEFENSE_IMPACT.md  [DONE]
-│   └── triage_archetypes.py   ← misses: bug vs ground truth → TRIAGE.md  [DONE]
-├── tests/                     ← pytest suite (73 tests)  [DONE]
-└── app/
-    └── streamlit_app.py       ← Streamlit UI (legacy, λειτουργικό)  [DONE]
-```
-
----
-
-## Setup
-
-**Data (μία φορά, τρέχει μόνο τοπικά — nba_api δεν λειτουργεί σε sandbox):**
+**1. Data (once).** The dataset is not in the repository; see [Data sources and licensing](#data-sources-and-licensing).
 ```bash
 pip install nba_api pandas scikit-learn numpy
 python pipeline/fetch_nba_data.py     # → data/nba_stats_full.csv
 ```
 
-**Desktop app (Electron + FastAPI + React) — κύρια κατεύθυνση:**
+**2. Desktop app (Electron + FastAPI + React).**
 ```bash
 pip install -r backend/requirements.txt
-npm install            # root: electron toolchain + (postinstall) frontend deps
-npm run dev            # backend + Vite + Electron μαζί (concurrently)
+npm install            # root: Electron toolchain + (postinstall) frontend deps
+npm run dev            # backend + Vite + Electron together
 ```
-Λεπτομέρειες, build & troubleshooting: **[`DEVELOPMENT.md`](./DEVELOPMENT.md)**.
+`npm run dev` first frees ports 8000 and 5173 (it stops whatever is listening there). Set `PROSPECTMATCH_NO_KILL=1` to make it report instead. Build and troubleshooting notes: [`DEVELOPMENT.md`](./DEVELOPMENT.md).
 
-**Ή μόνο το backend API:**
+**3. Backend only.**
 ```bash
 cd backend && uvicorn main:app --reload      # → http://127.0.0.1:8000/docs
 ```
 
-**Tests & validation harnesses** (χρειάζονται το dataset· αλλιώς κάνουν skip):
+**4. Tests** (they need the dataset and are skipped without it).
 ```bash
 python -m pytest tests/ -q
 ```
-```bash
-python validation/tune_threshold.py     # → validation/REPORT.md
-```
-```bash
-python validation/defense_impact.py     # → validation/DEFENSE_IMPACT.md
-```
-```bash
-python validation/triage_archetypes.py  # → validation/TRIAGE.md
-```
 
-> Prospects + search history γράφονται σε `./.prospectmatch-data/` (dev) ή στο path
-> του `PROSPECTMATCH_DATA_DIR` env var (packaged app) — βλ. `DEVELOPMENT.md`.
-
-**Ή το legacy Streamlit UI:**
+**5. Legacy Streamlit UI.**
 ```bash
-pip install streamlit plotly
+pip install -r requirements.txt
 streamlit run app/streamlit_app.py
 ```
 
----
+Prospects and search history are stored in `./.prospectmatch-data/` in development, or in the directory given by the `PROSPECTMATCH_DATA_DIR` environment variable.
 
-## Data sources
+## Data sources and licensing
 
-**nba_api** — box score + advanced stats (1996–σήμερα), scoring profile (2013-14+), hustle stats (2015-16+).
+- **`nba_api`** — a Python client for NBA.com statistics endpoints. The pipeline fetches box score and advanced stats (1996-97 onward), scoring profile, hustle stats, and matchup defense (`LeagueDashPtDefend`, 2013-14 onward), plus player height, weight and position.
+- **Kaggle NBA Draft Combine (wingspan) — planned, not integrated.** The dataset has no wingspan column and no code reads one. `wingspan_cm` appears only as a planned signal in `ARCHETYPES.md` and in code comments.
 
-**Kaggle (NBA Draft Combine)** — `wingspan` (2000+), που δεν υπάρχει στο API.
+The CSV is **not in git** (`data/` is gitignored). To regenerate it, run `python pipeline/fetch_nba_data.py`. The script calls the API with rate-limit pauses, and the per-player calls (about 2,500) take roughly an hour; it can resume from a checkpoint if interrupted.
 
-Τι **δεν** έχουμε (συνειδητές αποφάσεις):
-- `VORP`, `PER`, `WS/48` — Basketball-Reference exclusive· limitation που τεκμηριώνεται.
-- Wingspan μόνο 2000+· athleticism/vertical εκτός scope.
+**License.** The code in this repository is released under the [MIT License](./LICENSE). That license covers the code only, not the data.
 
----
+**Terms of use.** This repository does not state or grant any license for the data. Anyone who fetches, stores or redistributes the data must check the terms of use of NBA.com / `nba_api` and of Kaggle themselves. In particular, `npm run dist` copies `data/nba_stats_full.csv` into the installer, so do not distribute built installers without checking those terms first.
 
-## Σχεδιαστικές αρχές
+## Known limitations
 
-- **Ακρίβεια + αιτιολόγηση** — κάθε feature/βάρος έχει λόγο ύπαρξης.
-- **Masked similarity** — stats που ο χρήστης δεν ορίζει δεν επηρεάζουν το score.
-- **Honest limitations** — η άμυνα πιάνεται αδύναμα από box-score stats· τα defensive traits έχουν τα περισσότερα λάθη, και αυτό τεκμηριώνεται αντί να κρύβεται.
-- **Επεκτασιμότητα χωρίς over-engineering** — multi-league αργότερα, καθαρά, χωρίς να περιπλέκουμε το τώρα.
+- **Defense is weakly captured by box-score stats.** The defensive traits have the most errors in validation. This is documented here, not hidden.
+- **Versatile wing defense is not measurable from the available stats.** The `versatile_wing_defender` trait has recall 0.450 (precision 0.692) on the validation set. `deflections` measures style (ball-hawking), not quality: Mikal Bridges, an elite on-ball defender who does not gamble, has 1.71, while Luka Doncic, a known poor defender, has 3.38. The distributions overlap, and removing `deflections` drops recall to 0.05. Matchup data (`d_fg3_diff`) was added and helps `point_of_attack_defender` (F1 0.385 → 0.476), but adding it to `versatile_wing_defender` was neutral or slightly negative.
+- **Archetype labeling is only partly accurate.** The top-1 label matches the expected one for 26 of 72 validation players. About 8 of the misses come from trait-count dominance in the label tie-break (a smaller preset is always a subset of a larger one), which the project could not fix by reordering presets. A score-weighted tie-break was tried and made results worse (see the changelog). At the current threshold, 15.0% of rows get no label and 29.3% get a fallback noun-plus-modifier label.
+- **The validation set is small and not held out.** Labels come from the example players in `ARCHETYPES.md`. Thresholds and signals were tuned and checked against the same 72 players, so the scores above are not an independent test.
+- **Several features are missing for older seasons.** Hustle stats are only available from 2016-17 (the 2015-16 season is discarded because its data is corrupt); matchup defense only from 2013-14. Older rows are handled with the availability-aware masking described above, which makes those matches rest on fewer stats; the coverage badge shows this. It does not recover the missing information.
+- **`stl` and `blk` are counting stats.** They are not per-36 normalized: `corr(stl, min) = +0.64`, while rebounding is already rate-adjusted.
+- **Missing stats by design.** VORP, PER and WS/48 are Basketball-Reference exclusives and are not included. Athleticism measurements (e.g. vertical) are out of scope.
+- **NBA only,** and the packaged desktop build currently falls back to a system Python install for the backend.
+
+Design principles: accuracy and a stated reason for each feature and weight; similarity masked to the stats the user defines; limitations documented rather than hidden; extensible to other leagues without over-engineering the present.
+
+## Status and roadmap
+
+This is a thesis project in progress. The NBA pipeline, matching engine, desktop app, prospect tracking and test suite work. Open items:
+
+- Classifier tuning (archetype top-1 accuracy)
+- Per-36 normalization of `stl` / `blk`
+- Self-contained bundle (PyInstaller backend executable)
+- Multi-league support (NCAA, G-League, EuroLeague, EuroCup)
+
+## More documentation
+
+- [`ARCHETYPES.md`](./ARCHETYPES.md) — the 18 primitives and 36 compound presets
+- [`DEVELOPMENT.md`](./DEVELOPMENT.md) — architecture, setup, run and build of the desktop stack
+- [`CHANGELOG.md`](./CHANGELOG.md) — detailed project log, including negative results
