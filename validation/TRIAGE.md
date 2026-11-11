@@ -10,29 +10,29 @@ Threshold: **0.6** · dataset rows: **8382** · labels: **72**
 
 | Preset | Φορές σε χρήση | Σκιάζεται από |
 |---|---|---|
-| `Two-Way Wing` | 10 | `Two-Way Slashing Star`, `Point Forward` |
+| `Two-Way Wing` | 10 | `Point Forward`, `Two-Way Slashing Star` |
 | `3-and-D Wing` | 21 | `Two-Way Sharpshooter`, `Connector / Glue Wing`, `Stretch Four / Combo Forward` |
 | `Defensive Playmaker` | 44 | `Two-Way Lead Guard` |
 | `Sharpshooter` | 118 | `Two-Way Sharpshooter` |
 | `Pure Shooter` | 123 | `Sharpshooter`, `Two-Way Sharpshooter` |
 | `Putback Finisher` | 130 | `Energy Big` |
 | `Slashing Guard` | 142 | `Bucket-Getter`, `Two-Way Slashing Star`, `All-Around Forward` |
-| `Shooting Stretch Big` | 159 | `Stretch Four / Combo Forward` |
+| `Shooting Stretch Big` | 156 | `Stretch Four / Combo Forward` |
 | `Pure Defensive Center` | 171 | `Rim-Running Anchor` |
-| `Instant Offense` | 189 | `Bucket-Getter`, `Wing Scorer` |
-| `Stretch Big` | 437 | `Versatile Swiss-Army Big` |
+| `Instant Offense` | 189 | `Wing Scorer`, `Bucket-Getter` |
+| `Stretch Big` | 417 | `Versatile Swiss-Army Big` |
 
 > Κανένα preset δεν είναι εντελώς απρόσιτο.
 
-## 2. Triage των 50 misses
+## 2. Triage των 46 misses
 
 | Κατηγορία | Πλήθος | Είδος δουλειάς |
 |---|---|---|
 | A. ΛΕΙΠΕΙ TRAIT | 30 | τεχνικό |
-| B. ΠΙΟ ΣΥΓΚΕΚΡΙΜΕΝΟ LABEL | 2 | **ground truth** |
+| B. ΠΙΟ ΣΥΓΚΕΚΡΙΜΕΝΟ LABEL | 3 | **ground truth** |
 | C. ΛΙΓΟΤΕΡΟ ΣΥΓΚΕΚΡΙΜΕΝΟ | 3 | τεχνικό |
 | D. POSITION MISMATCH | 0 | design |
-| E. ΑΛΛΟΣ ΚΛΑΔΟΣ | 15 | ανά περίπτωση |
+| E. ΑΛΛΟΣ ΚΛΑΔΟΣ | 10 | ανά περίπτωση |
 
 ### A. ΛΕΙΠΕΙ TRAIT — τεχνικό, ΔΙΟΡΘΩΣΙΜΟ  (30)
 
@@ -40,7 +40,7 @@ _Ο classifier δεν άναψε trait που το expected preset απαιτε�
 
 | Παίκτης | Θέση | Expected | Got | Λείπουν traits |
 |---|---|---|---|---|
-| Luka Doncic | G-F | `Scoring Lead Guard` | `Two-Way Lead Guard` | midrange_scorer |
+| Luka Doncic | G-F | `Scoring Lead Guard` | `Point Forward` | midrange_scorer |
 | LaMelo Ball | G | `Scoring Lead Guard` | `Floor General` | midrange_scorer |
 | Cade Cunningham | G | `Scoring Lead Guard` | `Floor General` | midrange_scorer |
 | Jrue Holiday | G | `Two-Way Lead Guard` | `Pure Point Guard` | on_ball_creator |
@@ -71,12 +71,13 @@ _Ο classifier δεν άναψε trait που το expected preset απαιτε�
 | Julius Randle | F-C | `Modern Two-Way Forward` | `Creating Playmaking Big` | slasher, versatile_wing_defender |
 | Paolo Banchero | F | `Modern Two-Way Forward` | `All-Around Forward` | versatile_wing_defender |
 
-### B. ΠΙΟ ΣΥΓΚΕΚΡΙΜΕΝΟ LABEL — ΑΠΟΦΑΣΗ GROUND TRUTH  (2)
+### B. ΠΙΟ ΣΥΓΚΕΚΡΙΜΕΝΟ LABEL — ΑΠΟΦΑΣΗ GROUND TRUTH  (3)
 
 _Το expected είναι subset του got: ο classifier βρήκε ΠΕΡΙΣΣΟΤΕΡΑ traits. Συχνά το got είναι σωστότερο → σκέψου `accept_also` στο labels.py._
 
 | Παίκτης | Θέση | Expected | Got | Λείπουν traits |
 |---|---|---|---|---|
+| Jayson Tatum | G-F | `Two-Way Wing` | `Point Forward` | — |
 | Jakob Poeltl | C | `Pure Defensive Center` | `Rim-Running Anchor` | — |
 | Mitchell Robinson | F-C | `Pure Defensive Center` | `Rim-Running Anchor` | — |
 
@@ -96,7 +97,7 @@ _Κανένα position-valid preset δεν ταίριαξε, οπότε κέρδ
 
 _(καμία)_
 
-### E. ΑΛΛΟΣ ΚΛΑΔΟΣ — ανά περίπτωση  (15)
+### E. ΑΛΛΟΣ ΚΛΑΔΟΣ — ανά περίπτωση  (10)
 
 _Καμία subset σχέση· ο classifier πήγε σε τελείως άλλη οικογένεια._
 
@@ -108,14 +109,9 @@ _Καμία subset σχέση· ο classifier πήγε σε τελείως άλ�
 | Norman Powell | G | `Instant Offense` | `Sharpshooter` | — |
 | Ja Morant | G | `Slashing Guard` | `Two-Way Lead Guard` | — |
 | Derrick White | G | `3-and-D Guard` | `Sharpshooter` | — |
-| Jayson Tatum | G-F | `Two-Way Wing` | `Two-Way Lead Guard` | — |
 | Paul George | F | `Two-Way Wing` | `Defensive Playmaking Big` | — |
-| DeMar DeRozan | G-F | `Wing Scorer` | `Scoring Lead Guard` | — |
-| Scottie Barnes | G-F | `Point Forward` | `Two-Way Lead Guard` | — |
 | Joel Embiid | F-C | `Two-Way Scoring Big` | `Point Center` | — |
-| Brook Lopez | C | `Stretch Rim Protector` | `Stretch Big` | — |
 | Jaren Jackson Jr. | F-C | `Stretch Rim Protector` | `Modern Two-Way Forward` | — |
-| Myles Turner | F-C | `Stretch Rim Protector` | `Stretch Big` | — |
 | Isaiah Hartenstein | F-C | `Energy Big` | `Rim-Running Anchor` | — |
 
 ## 3. Ποιο trait ξεκλειδώνει τα περισσότερα misses
